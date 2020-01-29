@@ -72,9 +72,9 @@ function focusPlusContext(data) {
      * Task 4 - Define the brush for the context graph (Navigation)
      */
     var brush = d3.brushX()
-        .extent([0, 0], [width, height2])   // Set the extent of the brush from (0,0) to (width, height2)
-        .on("brush end", brushed);          // On brush event start, call brushed()
-
+        .extent([[0, 0], [width, height2]])     // Set the extent of the brush from (0,0) to (width, height2)
+        .on("brush end", brushed);              // On brush event start, call brushed()
+    
     //Setting scale parameters
     var maxDate = d3.max(data.features, function (d) { return parseDate(d.properties.Date) });
     var minDate = d3.min(data.features, function (d) { return parseDate(d.properties.Date) });
@@ -136,7 +136,8 @@ function focusPlusContext(data) {
       * Task 8 - Call plot function.
       * plot(points,nr,nr) try to use different numbers for the scaling.
       */
-    var plot_points = new Points();          // Create plot_points as a Points() function object
+    // Where is this defined? We found out that if we declared it here, the axes did not work
+    plot_points = new Points();              // Create plot_points as a Points() function object
     plot_points.plot(small_points, 4, 4);    // Scaling here refers to how large the dots are!
 
     //<---------------------------------------------------------------------------------------------------->
@@ -150,12 +151,16 @@ function focusPlusContext(data) {
     dots.attr("clip-path", "url(#clip)");
 
     /**
-     * Task 10 - Call x and y axis
+     * Task 10 - Call x and y axis          // WHERE IS COMMENT TAG ON MAGNITUDE TEXT?!
      */
     focus.append("g")
-    //here..
+        .attr("class", "axis axis--x")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+
     focus.append("g")
-    //here..
+        .attr("class", "axis axis--y")
+        .call(yAxis);
 
     //Add y axis label to the scatter plot
     d3.select(".legend")
@@ -175,7 +180,11 @@ function focusPlusContext(data) {
      * Task 11 - Plot the dots on the focus graph.
      */
     selected_dots = dots.selectAll("dot")
-        //here..
+        .data(data.features)
+        .enter()
+        .append("circle")
+        .attr("class", "dot")
+        .style("opacity", 0.69420)
         .filter(function (d) { return d.properties.EQ_PRIMARY != null })
         .attr("cx", function (d) {
             return xScale(parseDate(d.properties.Date));
@@ -188,6 +197,8 @@ function focusPlusContext(data) {
      * Task 12 - Call plot function
      * plot(points,nr,nr) no need to send any integers!
      */
+    var plot_dots = new Points();           // Create plot_points as a Points() function object
+    plot_dots.plot(selected_dots);    // Scaling here refers to how large the dots are!
 
     //<---------------------------------------------------------------------------------------------------->
 
@@ -204,7 +215,7 @@ function focusPlusContext(data) {
             /**
              * Task 13 - Update information in the "tooltip" by calling the tooltip function.
              */
-
+            points.tooltip(d);
 
             //Rescale the dots onhover
             d3.select(this).attr('r', 15)
@@ -260,12 +271,10 @@ function focusPlusContext(data) {
      * The brush function is trying to access things in scatter plot which are not yet
      * implmented if we put the brush before.
      */
-    context.append("g")
+    context.append("g")                         // SVG g-element = group
         .attr("class", "brush")
-        .call(brush)
-        .call(brush.move, xScale.range());
-    //here..
-
+        .call(brush)                            // call the brush object
+        .call(brush.move, xScale.range());      // the brush can move within the xScale.range()
     //<---------------------------------------------------------------------------------------------------->
 
     //Brush function for filtering through the data.
@@ -296,7 +305,7 @@ function focusPlusContext(data) {
             /**
              * Remove comment for updating dots on the map.
              */
-            //curr_points_view = world_map.change_map_points(curr_view_erth)
+            curr_points_view = world_map.change_map_points(curr_view_erth)
         }
     }
 
