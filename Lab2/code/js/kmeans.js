@@ -6,11 +6,13 @@
 
 function kmeans(data, k) {
 
+    const EPSILON = 0.0000000000000000000000000000000000001;
+
     //Crap we need
     var iterations = 0;
-    var maxLoops = 5;
+    var maxLoops = 5000;
     var iterations = 0;
-    var qualityChange = 0;
+    var qualityChange = 1;
     var oldqualitycheck = 0;
     var qualitycheck = 0;
     var converge = false;
@@ -35,10 +37,18 @@ function kmeans(data, k) {
         var clusterIndexPerPoint = assignPointsToMeans(new_array, centroid);
 
         //Task 4.4 - Do a quality check for current result
+        oldqualitycheck = qualitycheck;
         qualitycheck = qualityCheck(centroid,new_array,clusterIndexPerPoint);
 
         //End the loop if...
+        if (oldqualitycheck != 0)
+            qualityChange = oldqualitycheck - qualitycheck;
 
+
+        console.log(qualitycheck)
+        iterations++;
+        if (qualityChange < EPSILON || iterations > maxLoops)
+            converge = true;
     }
     while (converge == false)
     //Return results
@@ -56,10 +66,18 @@ function kmeans(data, k) {
  * @param {*} data
  * @return {array}
  */
-function parseData(data){
+function parseData(data) {
+
 
     var array = [];
 
+    for (let i = 0; i < data.length; i++) {
+        var tempArray = [];
+        for (let column in data[i]) {
+            tempArray.push(parseFloat(data[i][column]));    // Each data item is a array
+        }
+        array.push(tempArray);
+    }
     return array;
 }
 
@@ -72,8 +90,12 @@ function parseData(data){
 function initCentroids(data, k){
 
     //Create k centroids
+    var centroids = new Array(k);
 
-    return centroid;
+    for (var i = 0; i < k; i++) 
+        centroids[i] = data[Math.floor(Math.random() * data.length)];   // Collect a random value from data array
+
+    return centroids;
 }
 
 /**
@@ -85,6 +107,10 @@ function initCentroids(data, k){
 * @return {Array}
 */
 function assignPointsToMeans(points, means){
+
+    var assignments = new Array(points.length);
+    for (let i = 0; i < points.length; i++)
+        assignments[i] = findClosestMeanIndex(points[i], means);
 
     return assignments;
 };
@@ -98,6 +124,14 @@ function assignPointsToMeans(points, means){
 */
 function findClosestMeanIndex(point, means){
 
+    // means: array with centroids
+    // point: one specific data point
+    var distances = new Array(means.length);
+
+    for (let i = 0; i < means.length; i++)
+        distances[i] = euclideanDistance(point, means[i]);    // Write over with min dist
+
+    
     return findIndexOfMinimum(distances);
 };
 /**
@@ -112,8 +146,12 @@ function euclideanDistance(point1, point2){
     if (point1.length != point2.length)
         throw ("point1 and point2 must be of same dimension");
 
-    return sum;
-
+    var dim = point1.length;
+    let sum = 0;
+    for (let i = 0; i < dim; i++) {
+        sum += Math.pow(point2[i] - point1[i], 2);
+    }
+    return Math.sqrt(sum);
 };
 
 /**
@@ -125,7 +163,13 @@ function euclideanDistance(point1, point2){
 function findIndexOfMinimum(array){
 
     var index = 0;
-
+    var minDist = 1000000000000000000000;
+    for (let i = 0; i < array.length; i++) {
+        if (array[i] < minDist) {
+            index = i;
+            minDist = array[i];
+        }
+    }
     return index;
 };
 
@@ -147,6 +191,17 @@ function computeClusterMeans(points, assignments, k){
     // for each cluster
     var newMeans = [];
 
+
+    for (let i = 0; i < k; i++) {
+        var temp = [];
+        for (let j = 0; j < assignments.length; j++) {
+            if (assignments[j] == i) {
+                temp.push(points[j]);   // Points that belong to our current cluster
+            }
+        }
+        if(temp.length > 0)
+            newMeans.push(averagePosition(temp));    // Calculate new average position for current cluster
+    }
     return newMeans;
 };
 
@@ -158,9 +213,21 @@ function computeClusterMeans(points, assignments, k){
  * @param {*} new_array
  * @param {*} clusterIndexPerPoint
  */
-function qualityCheck(centroid, new_array, clusterIndexPerPoint){
+function qualityCheck(centroid, new_array, clusterIndexPerPoint) {
+
+    let qualitycheck = 0;
+
+    for (let i = 0; i < centroid.length; i++) {
+        let temp = 0;
+        for (let j = 0; j < new_array.length; j++) {
+            if (clusterIndexPerPoint[j] == i) {
+                temp += Math.pow(euclideanDistance(new_array[j], centroid[i]), 2);
+            }
+        }
+        qualitycheck += temp;
+    }
     return qualitycheck;
-}
+};
 
 /**
  * Calculate average of points
